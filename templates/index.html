@@ -1,1 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Forensics CTF Challenge Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #020617;
+      border-radius: 16px;
+      padding: 24px 28px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border: 1px solid #1f2937;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      color: #f97316;
+    }
+    h2 {
+      font-size: 1.2rem;
+      margin-top: 24px;
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 4px;
+      color: #f9fafb;
+    }
+    p {
+      color: #9ca3af;
+      font-size: 0.95rem;
+    }
+    .form-group {
+      margin: 16px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+    input[type="file"],
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+    input[type="text"]::placeholder {
+      color: #6b7280;
+    }
+    .methods-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .method-card {
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      padding: 10px;
+      background: #020617;
+    }
+    .method-card input {
+      margin-right: 6px;
+    }
+    .method-title {
+      font-weight: 600;
+      color: #f9fafb;
+      font-size: 0.95rem;
+    }
+    .method-note {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+    button {
+      background: #f97316;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #020617;
+      margin-top: 8px;
+    }
+    button:hover {
+      background: #fb923c;
+    }
+    .flash {
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+    .flash.error {
+      background: #7f1d1d;
+      color: #fecaca;
+      border: 1px solid #b91c1c;
+    }
+    .result-card {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      background: #020617;
+    }
+    .result-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .code-block {
+      background: #020617;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      padding: 8px 10px;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.85rem;
+      color: #d1d5db;
+      overflow-x: auto;
+      margin-top: 6px;
+    }
+    a.download-link {
+      color: #fbbf24;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a.download-link:hover {
+      text-decoration: underline;
+    }
+    small {
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Forensics CTF Challenge Generator</h1>
+    <p>
+      Upload an image, enter a flag, choose a method, and generate a forensics-style CTF challenge.
+      The tool embeds the flag and shows the exact command to recover it.
+    </p>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('generate') }}" method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="image">Image file (PNG / JPG / JPEG)</label>
+        <input type="file" name="image" id="image" required>
+      </div>
+
+      <div class="form-group">
+        <label for="flag">Flag</label>
+        <input type="text" name="flag" id="flag" placeholder="flag{you_f0und_1t}" required>
+        <small>Default format is <code>flag{...}</code>, but any string works.</small>
+      </div>
+
+      <div class="form-group">
+        <label>Stego Method</label>
+        <div class="methods-list">
+          {% for key, info in methods.items() %}
+            <label class="method-card">
+              <input type="radio" name="method" value="{{ key }}" required>
+              <span class="method-title">{{ info.label }}</span>
+              <div class="method-note">{{ info.note }}</div>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button type="submit">Generate Challenge</button>
+    </form>
+
+    {% if result %}
+      <h2>Challenge Generated</h2>
+      <div class="result-card">
+        <div class="result-title">{{ result.method_label }}</div>
+        <p>{{ result.method_note }}</p>
+
+        <p>
+          <strong>Download challenge file:</strong>
+          <a class="download-link"
+             href="{{ url_for('download_file', filename=result.output_name) }}">
+            {{ result.output_name }}
+          </a>
+        </p>
+
+        <p><strong>Suggested extraction command:</strong></p>
+        <div class="code-block">
+          {{ result.extraction_hint }}
+        </div>
+      </div>
+    {% endif %}
+
+    <h2>Notes</h2>
+    <ul>
+      <li><strong>Metadata</strong> works only on JPEG/JPG and uses <code>exiftool</code>.</li>
+      <li><strong>Strings</strong> works on PNG/JPG and uses <code>strings | grep</code>.</li>
+      <li><strong>ZIP</strong> appends a hidden zip and uses <code>binwalk -e</code>.</li>
+      <li><strong>ZSteg</strong> works only on PNG and uses <code>zsteg</code>.</li>
+    </ul>
+  </div>
+</body>
+</html>
