@@ -19,10 +19,12 @@ ForensiX is a cybersecurity tool designed to help **CTF challenge creators** aut
 ## 🧪 Demo Web Application
 
 Upload an image → enter a flag → select a method → generate the challenge → download the modified file.
+<img width="952" height="707" alt="Screenshot From 2025-11-24 18-58-23" src="https://github.com/user-attachments/assets/26ce2f68-bdb0-46d1-bb3f-79a14c0b0040" />
 
 Run locally:
 ```bash
-python3 app.py
+python3 app.py<img width="963" height="794" alt="Screenshot From 2025-11-24 18-59-19" src="https://github.com/user-attachments/assets/240ae930-fb72-4736-aec3-cfcba48f12f9" />
+
 ````
 
 Access the app:
